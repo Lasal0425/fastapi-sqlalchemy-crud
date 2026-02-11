@@ -55,23 +55,29 @@ def get_product_by_id(id: int, db : SessionLocal = Depends(get_db)):
 
 @api.post("/product")
 def add_product(product: Product, db : SessionLocal = Depends(get_db)):
-    products.append(product)
+    db.add(DBProduct(**product.model_dump()))
+    db.commit()
     return product
 
 @api.put("/product")
-def update_product(id : int, product : Product):
-    for i in range (len(products)):
-        if products[i].id == id:
-            products[i] = product
-            return "product updated"
-    
+def update_product(id : int, product : Product, db : SessionLocal = Depends(get_db)):
+   db_product = db.query(DBProduct).filter(DBProduct.id == id).first()
+   if db_product:
+    db_product.name = product.name
+    db_product.description = product.description
+    db_product.price = product.price
+    db_product.quantity = product.quantity
+    db.commit()
+    return "Product Updated"
+   else: 
     return "Product not found"
 
 @api.delete("/product")
-def delete_product(id : int):
-    for i in range(len(products)):
-        if products[i].id == id:
-            del products[i]
-            return "product deleted"
-
-    return "Product not found"
+def delete_product(id : int, db : SessionLocal = Depends(get_db)):
+    db_product = db.query(DBProduct).filter(DBProduct.id == id).first()
+    if db_product:
+        db.delete(db_product)
+        db.commit()
+        return "Product deleted"
+    else:
+        return "Product not found"
